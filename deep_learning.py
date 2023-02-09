@@ -1,3 +1,6 @@
+# since the quantitative values of the wave frequency is arbitrary depending on the ride, so the frenquency alone would be inefficient
+# 
+
 import os
 import time
 import numpy as np
@@ -14,7 +17,7 @@ import json
 import datetime as dt
 
 from collections import defaultdict, Counter
-from scipy.fft import fft, fftfreq
+from scipy.fft import rfft, rfftfreq
 
 
 # from sklearn.ensemble import GradientBoostingClassifier
@@ -31,6 +34,8 @@ from scipy.fft import fft, fftfreq
 
 
 def main():
+	plt.rcParams["figure.figsize"] = [45.00, 45.0]
+	plt.rcParams["figure.autolayout"] = True
 	theSeed = 50
 	np.random.seed(theSeed)
 	tf.random.set_seed(theSeed)
@@ -47,23 +52,33 @@ def main():
 	}
 
 	models = [
+		"10",
+		"20_10",
+		"50_10",
+		"70_20",
 		"100_50_10",
-		"200_50_10",
-		"300_50_10",
-		"300_100_10",
-		"300_200_10",
-		"400_200_10",
-		"300_200_100_10",
-		"400_200_100_10",
-		"500_400_300_200_10",
-		"500_300_200_100_10"
+		"200_50_10"
+		# "300_50_10",
+		# "300_100_10",
+		# "300_200_10",
+		# "400_200_10",
+		# "300_200_100_10",
+		# "400_200_100_10",
+		# "450_400_300_200_10",
+		# "450_300_200_100_10"
 	]
 
 
-	x_train, y_train = getFrequenciesTrainData()
+	x_train, y_train = getFeaturesTrainData()
 	# x_test, y_test = getTestData()
-	x_test, y_test = x_train[:int(0.2 * x_train.shape[0])], y_train[:int(0.2 * y_train.shape[0])]
-	x_pred = getFrequenciesPredData()
+	x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+	x_pred = getFeaturesPredData()
+
+	# x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
+	# x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+	# x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
+
+
 
 	print(x_train.shape, y_train.shape)
 	print(x_test.shape, y_test.shape)
@@ -109,28 +124,131 @@ def normalized_data(fileName):
 
 	return df
 
+def getFeatures(y, time):
+	features = []
+	dataLength = len(y)
+	newthing = np.array([x - y.mean() for x in y])
+	yf = np.abs(rfft(newthing))
+	xf = rfftfreq(len(y), 1 / len(y))
 
-def getPreqWindow(dataset, time):
-	frequencies = []
+	# peaks_index = find_peaks(yf)
+	# peaks = [xf[i] for i in peaks_index]
+
+	peak = yf.max()
+	freq = 0
+	for i in range(len(xf)):
+		if yf[i] == peak:
+			freq = xf[i]
+
+	n5 = np.nanpercentile(y, 5)
+	n25 = np.nanpercentile(y, 25)
+	n75 = np.nanpercentile(y, 75)
+	n95 = np.nanpercentile(y, 95)
+	median = np.nanpercentile(y, 50)
+	mean = np.nanmean(y)
+	std = np.nanstd(y)
+	var = np.nanvar(y)
+	rms = np.nanmean(np.sqrt(y**2))
+
+	features.append(freq)
+	features.append(y.max())
+	features.append(y.min())
+	features.append(n5)
+	features.append(n25)
+	features.append(n75)
+	features.append(n95)
+	features.append(median)
+	features.append(mean)
+	features.append(std)
+	features.append(var)
+	features.append(rms)
+	features.append(time)
+
+	return features
+	# return peaks
+
+
+# def getWindow(t=0.72):
+# 	acx, acy, acz = [], [], []
+# 	time = 0 
+# 	x_train = np.array([[0]])
+# 	for fileName in fileNames:
+# 		df = pd.read_csv(fileName, usecols=columns)
+
+# 		for i in range(len(df)):
+# 			time += df.iloc[i].time 
+# 			acx.append(df.iloc[i].ax)
+# 			acy.append(df.iloc[i].ay)
+# 			acz.append(df.iloc[i].az)
+# 			if i < len(df) and time >= t:
+# 				freqx, freqy, freqz = fft(np.array(acx)), fft(np.array(acy)), fft(np.array(acz))
+# 				np.concatenate((x_train, np.concatenate((freqx, freqy, freqz), axis=0).reshape((freqx.shape[0], 3))))
+# 				acx, acy, acz = [], [], []
+# 				time = 0
+
+
+# get half a period, which means when it changes direction twice
+def getTimes(y, timeData):
+	times = []
+	record = 0
+	index = 1
+
+	for i in range(1, len(y) - 1):
+		if (y[i - 1] < y[i] and y[i + 1] < y[i]) or (y[i - 1] > y[i] and y[i + 1] > y[i]):
+			if index % 2 != 0:
+				times.append(timeData[i] - record)	
+			else:
+				record = timeData[i]
+
+			index += 1
+
+
+	return times
+
+
+# get the features (12 features) for each window of half a period, including the one dominant frequency in that time period and the time of the window, since the larger the window the more it means that it is not a pumping period
+def getFeaWindow(dataset):
+	features = []
+	cur = 1
+	j = 0
 	windowx, windowy, windowz = [], [], []
-	cur_time = 0
+	times = getTimes(dataset['x(t)(z)'], dataset['time'])
 	for i in range(len(dataset)):
-		windowx.append(dataset.iloc[i]['x(t)(x)'])
-		windowy.append(dataset.iloc[i]['x(t)(y)'])
-		windowz.append(dataset.iloc[i]['x(t)(z)'])
-		if i < len(dataset) and cur_time >= time: 
-			freqx, freqy, freqz = fft(np.array(freqx)), fft(np.array(freqy)), fft(np.array(freqz))
-			frequencies.append((freqx, freqy, freqz))
-			windowx, windowy, windowz = [], [], []
-			cur_time = 0
+		# windowx.append(dataset.iloc[i]['x(t)(x)'])
+		# windowy.append(dataset.iloc[i]['x(t)(y)'])
+		# windowz.append(dataset.iloc[i]['x(t)(z)'])
 
-		cur_time += dataset.iloc[i].time
+		xz = dataset.iloc[i]['x(t)(x)raw']
+		windowz.append(xz)
 
-	return np.array(frequencies)
+		if j < len(times) and i < len(dataset) and dataset.iloc[i].time >= times[j] * cur: 
+			# freqx, freqy, freqz = fft(np.array(freqx)), fft(np.array(freqy)), fft(np.array(freqz))
+			feature = getFeatures(np.array(windowz), times[j])
+			features.append(feature)
+			# windowx, windowy, windowz = [], [], []
+			windowz = []
+			cur += 1
+			j += 1
+
+		if j >= len(times):
+			feature = getFeatures(np.array(dataset['x(t)(x)raw'][i:]), 0)
+			features.append(feature)
+
+	print("shape of the features array is", np.array(features).shape)
+
+	return np.array(features)
+
+
+def find_peaks(arr):
+	peaks_index = []
+	for i in range(1, len(arr) - 1):
+		if arr[i] > arr[i - 1] and arr[i] > arr[i + 1]:
+			peaks_index.append(i)
+	return peaks_index
 
 
 # =============== get frequencies after seconds in dataset ============== #
-def getFrequenciesTrainData():
+def getFeaturesTrainData():
 	fileNames = ["pumping_.csv", "pushing_.csv", "pushing_2.csv", "coasting_.csv"]
 
 	# df_train = pd.DataFrame(columns = ['time', 'ax', 'ay', 'az'])
@@ -148,60 +266,65 @@ def getFrequenciesTrainData():
 
 	# return frequencies
 
-	x_train = np.array([[0, 0, 0]])
+	x_train = np.array([[0] * 13])
 	y_train = [""]
 	for fileName in fileNames:
-		xx, xy, xz = [], [], []
+		# xx, xy, xz = [], [], []
 		df = normalized_data(fileName)
 
 		if fileName == "pumping.csv":
 			df = df.loc[(df["time"] > 10) & (df["time"] < df.iloc[-1]["time"] - 3)]
 
 		df = transformation(df)
-		print(len(df))
-		for i in range(len(df)):
-			xx.append(df.iloc[i]["x(t)(x)"])
-			xy.append(df.iloc[i]["x(t)(y)"])
-			xz.append(df.iloc[i]["x(t)(z)"])
+		# for i in range(len(df)):
+		# 	xx.append(df.iloc[i]["x(t)(x)"])
+		# 	xy.append(df.iloc[i]["x(t)(y)"])
+		# 	xz.append(df.iloc[i]["x(t)(z)"])
 
-		freqx, freqy, freqz = fft(np.array(xx)), fft(np.array(xy)), fft(np.array(xz))
-		x_train = np.concatenate((x_train, np.concatenate((freqx, freqy, freqz), axis=0).reshape((freqx.shape[0], 3))))
+		# freqx, freqy, freqz = fft(np.array(xx)), fft(np.array(xy)), fft(np.array(xz))
+		# x_train = np.concatenate((x_train, np.concatenate((freqx, freqy, freqz), axis=0).reshape((freqx.shape[0], 3))))
+		features = getFeaWindow(df)
+		x_train = np.concatenate((x_train, features))
 
-		y_train += [fileName.split("_")[0]] * freqx.shape[0]
-
-	x_train = np.array(x_train)
+		y_train += [fileName.split("_")[0]] * features.shape[0]
 
 	for i in range(len(x_train)):
-		if (x_train[i] == [0, 0, 0]).any():
+		if (x_train[i] == [0]*13).any():
 			x_train = np.delete(x_train, i, 0)
 			y_train = np.delete(y_train, i, 0)
-		if i == len(x_train) - 1:
+
+		if i >= len(x_train) - 1:
 			break
+
+	print(x_train.shape, y_train.shape)
 
 	y_train = np.array(y_train)
 	return x_train, y_train
 
-def getFrequenciesPredData():
+def getFeaturesPredData():
 	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
-	columns = ["az", "ay", "ax", "time", "Azimuth", "Pitch", "Roll"]
-	x_pred = np.array([[0, 0, 0]])
+
+	x_pred = np.array([[0] * 13])
 	for fileName in fileNames:
-		xx, xy, xz = [], [], []
+		# xx, xy, xz = [], [], []
 		df = normalized_data(fileName)
 
 		df = transformation(df)
-		for i in range(len(df)):
-			xx.append(df.iloc[i]["x(t)(x)"])
-			xy.append(df.iloc[i]["x(t)(y)"])
-			xz.append(df.iloc[i]["x(t)(z)"])
+		# for i in range(len(df)):
+		# 	xx.append(df.iloc[i]["x(t)(x)"])
+		# 	xy.append(df.iloc[i]["x(t)(y)"])
+		# 	xz.append(df.iloc[i]["x(t)(z)"])
 
-		freqx, freqy, freqz = fft(np.array(xx)), fft(np.array(xy)), fft(np.array(xz))
-		x_pred = np.concatenate((x_pred, np.concatenate((freqx, freqy, freqz), axis=0).reshape((freqx.shape[0], 3))))
+		# freqx, freqy, freqz = fft(np.array(xx)), fft(np.array(xy)), fft(np.array(xz))
+		# x_pred = np.concatenate((x_pred, np.concatenate((freqx, freqy, freqz), axis=0).reshape((freqx.shape[0], 3))))
+
+		features = getFeaWindow(df)
+		x_pred = np.concatenate((x_pred, features))
 
 	for i in range(len(x_pred)):
-		if (x_pred[i] == [0, 0, 0]).any():
+		if (x_pred[i] == [0]*13).any():
 			x_pred = np.delete(x_pred, i, 0)
-		if i == len(x_pred) - 1:
+		if i >= len(x_pred) - 1:
 			break
 
 	return x_pred
@@ -262,6 +385,8 @@ def getTrainData():
 			break
 
 	return x_train, y_train
+
+# make graphs
 
 def getTestData():
 	x_test, y_test = np.array([[0, 0, 0]]), np.array(["Skip"])
@@ -354,12 +479,12 @@ def correspondingShuffle(x, y):
 
 
 def writeExperimentalResults(hParams, trainResults, testResults, predictions):
-	f = open("results/" + hParams["resultsName"] + ".txt", 'w')
+	f = open("results/models/" + hParams["resultsName"] + "_LSTM" + ".txt", 'w')
 	f.write(str(hParams) + '\n\n')
 	f.write(str(trainResults) + '\n\n')
 	f.write(str(testResults) + '\n\n')
 
-	f1 = open("results/" + hParams["predictName"] + ".txt", 'w')
+	f1 = open("results/models/" + hParams["predictName"] + "_LSTM" + ".txt", 'w')
 	f1.write(str(hParams) + '\n\n')
 	f1.write(str(predictions))
 
@@ -370,17 +495,17 @@ def writeExperimentalResults(hParams, trainResults, testResults, predictions):
 	f1.close()
 
 def writePercentReport(hParams, percentReport):
-	ff = open("results/" + hParams["percentName"] + ".txt", 'w')
+	ff = open("results/models/" + hParams["percentName"] + "_LSTM" + ".txt", 'w')
 	ff.write(percentReport)
 	ff.close()
 
 def writePredictions(hParams, predictions):
-	ff = open("results/" + hParams["predictName"] + ".txt", 'w')
+	ff = open("results/models/" + hParams["predictName"] + "_LSTM" + ".txt", 'w')
 	ff.write(str(predictions))
 	ff.close()
 
 def readExperimentalResults(fileName):
-	f = open("results/" + fileName + ".txt",'r')
+	f = open("results/models/" + fileName + ".txt",'r')
 	data = f.read().split('\n\n')
 
 	data[0] = data[0].replace("\'", "\"")
@@ -393,7 +518,7 @@ def readExperimentalResults(fileName):
 	return hParams, trainResults, testResults
 
 def readPredResults(fileName):
-	f = open("results/" + fileName + ".txt", "r")
+	f = open("results/models/" + fileName + ".txt", "r")
 	data = f.read().split('\n\n')
 
 	data[0] = data[0].replace("\'", "\"")
@@ -403,6 +528,13 @@ def readPredResults(fileName):
 	predictions = json.loads(data[1])
 	return hParams, predictions
 
+def plotPredictions(predictions, title):
+	plotCurves(x=np.array([x for x in range(len(predictios))]), 
+				yList= predictions, 
+				xLabel="time (t)", 
+				yLabelList=itemsToPlot, 
+				title= title + "predictions")
+
 def plotCurves(x, yList, xLabel="", yLabelList=[], title=""):
 	fig, ax = plt.subplots()
 	y = np.array(yList).transpose()
@@ -411,7 +543,7 @@ def plotCurves(x, yList, xLabel="", yLabelList=[], title=""):
 	plt.legend(yLabelList, loc='best', shadow=True)
 	ax.grid()
 	yLabelStr = "__" + "__".join([label for label in yLabelList])
-	filepath = "results/" + title + " " + yLabelStr + ".png"
+	filepath = "results/models/" + title + " " + yLabelStr + ".png"
 	fig.savefig(filepath)
 	print("Figure saved in", filepath)
 
@@ -450,7 +582,7 @@ def processResults():
 	percentReport = prediction_result(dPredictions)
 	writePercentReport(hParams, percentReport)
 
-def buildValAccuracyPlot(fileNames, title):
+def buildOverallResults(fileNames, title):
     # == get hParams == #
     hParams = readExperimentalResults(fileNames[0]+"_results_freq")[0]
 
@@ -475,6 +607,76 @@ def buildValAccuracyPlot(fileNames, title):
                 yLabel='Test set loss',
                 title="Test set loss_" + title,
                 filename="Test set loss_" + title)
+
+    # == plot points with xList being the parameter counts of all and yList being the test accuracies == #
+    plotPoints(xList=[readExperimentalResults(name+"_results_freq")[0]['paramCount'] for name in fileNames],
+                yList=[readExperimentalResults(name+"_results_freq")[2][1] for name in fileNames],
+                pointLabels= [name for name in fileNames],
+                xLabel='Number of parameters',
+                yLabel='Test set acc',
+                title="Test set acc_" + title,
+                filename="Test set acc_" + title)
+
+    fig, axs = plt.subplots(len(fileNames))
+    index = 0
+    for fileName in fileNames:
+    	plt.figure()
+    	predByModels = readPredResults(fileName+"_predict_freq")
+    	axs[index].plot([x for x in range(len(predByModels[1]))], [x for x in predByModels[1]])
+    	axs[index].set_title(fileName)
+    	index += 1
+
+    filepath = "results/models/predictions.png"
+    fig.savefig(filepath, dpi=200)
+    print("Figure saved in", filepath)
+
+    # hParams = readExperimentalResults(fileNames[0]+"_results_LSTM")[0]
+
+    # == plot curves with yList being the validation accuracies == #
+    # plotCurves(x = np.arange(0, hParams["numEpochs"]), 
+    #         yList=[readExperimentalResults(name+"_results_LSTM")[1]['val_accuracy'] for name in fileNames], 
+    #         xLabel="Epoch",
+    #         yLabelList=fileNames,
+    #         title= "val_LSTM_" + title)
+
+    # plotCurves(x = np.arange(0, hParams["numEpochs"]), 
+    #         yList=[readExperimentalResults(name+"_results_LSTM")[1]['accuracy'] for name in fileNames], 
+    #         xLabel="Epoch",
+    #         yLabelList=fileNames,
+    #         title= "acc_LSTM_" + title)
+
+    # # == plot points with xList being the parameter counts of all and yList being the test accuracies == #
+    # plotPoints(xList=[readExperimentalResults(name+"_results_LSTM")[0]['paramCount'] for name in fileNames],
+    #             yList=[readExperimentalResults(name+"_results_LSTM")[2][0] for name in fileNames],
+    #             pointLabels= [name for name in fileNames],
+    #             xLabel='Number of parameters',
+    #             yLabel='Test set loss',
+    #             title="Test set loss_LSTM_" + title,
+    #             filename="Test set loss_LSTM_" + title)
+
+    # # == plot points with xList being the parameter counts of all and yList being the test accuracies == #
+    # plotPoints(xList=[readExperimentalResults(name+"_results_LSTM")[0]['paramCount'] for name in fileNames],
+    #             yList=[readExperimentalResults(name+"_results_LSTM")[2][1] for name in fileNames],
+    #             pointLabels= [name for name in fileNames],
+    #             xLabel='Number of parameters',
+    #             yLabel='Test set acc',
+    #             title="Test set acc_LSTM_" + title,
+    #             filename="Test set acc_LSTM_" + title)
+
+    # fig, axs = plt.subplots(len(fileNames))
+    # index = 0
+    # for fileName in fileNames:
+    # 	plt.figure()
+    # 	predByModels = readPredResults(fileName+"_predict_LSTM")
+    # 	axs[index].plot([x for x in range(len(predByModels[1]))], [x for x in predByModels[1]])
+    # 	axs[index].set_title(fileName)
+    # 	index += 1
+
+    # filepath = "results/models/predictions_LSTM.png"
+    # fig.savefig(filepath, dpi=200)
+    # print("Figure saved in", filepath)
+
+
 
 
 
@@ -557,9 +759,12 @@ def getHParams(expName=None):
 
 	dropProp = 0.0
 	hParams['denseLayers'] = [int(x) for x in expName.split("_")]
-	hParams['resultsName'] = expName + "_results_freq"
-	hParams['predictName'] = expName + "_predict_freq"
-	hParams['percentName'] = expName + "_percent_freq"
+	# hParams['resultsName'] = expName + "_results_freq"
+	# hParams['predictName'] = expName + "_predict_freq"
+	# hParams['percentName'] = expName + "_percent_freq"
+	hParams['resultsName'] = expName + "_results"
+	hParams['predictName'] = expName + "_predict"
+	hParams['percentName'] = expName + "_percent"
 	hParams['optimizer'] = 'adam'
 
 	return hParams
@@ -585,6 +790,13 @@ def learn(dataSubsets, hParams):
 	# == Sequential Constructor == #
 	startTime = timeit.default_timer()
 	model = tf.keras.Sequential()
+
+	# long short term memory for time-series classification
+	# model.add(tf.keras.layers.LSTM(128, input_shape=(x_train.shape[1:]), activation='relu', return_sequences=True))
+	# model.add(tf.keras.layers.Dropout(0.2))
+
+	# model.add(tf.keras.layers.LSTM(128, activation='relu'))
+	# model.add(tf.keras.layers.Dropout(0.1))
 
 	for layer in hParams['denseLayers']:
 		model.add(tf.keras.layers.Dense(layer, activation='relu'))
@@ -621,22 +833,25 @@ def learn(dataSubsets, hParams):
 
 	return hist.history, model.evaluate(x_test, y_test), predictions
 
-
+# chunk the position vectors into time window
 
 models = [
+	"20_10",
+	"50_10",
+	"70_20",
 	"100_50_10",
-	"200_50_10",
-	"300_50_10",
-	"300_100_10",
-	"300_200_10",
-	"400_200_10",
-	"300_200_100_10",
-	"400_200_100_10",
-	"500_400_300_200_10",
-	"500_300_200_100_10"
+	"200_50_10"
+# 	"300_50_10",
+# 	"300_100_10",
+# 	"300_200_10",
+# 	"400_200_10",
+# 	"300_200_100_10",
+# 	"400_200_100_10",
+# 	"450_400_300_200_10",
+# 	"450_300_200_100_10"
 ]
 
 main()
 # processResults()
 
-buildValAccuracyPlot(models, "dense")
+# buildOverallResults(models, "")
