@@ -1,3 +1,0 @@
-Percentage of pumping: 37.3%
-Percentage of pushing: 41.7%
-Percentage of coasting: 21.0%
