@@ -69,31 +69,51 @@ def main(method):
 		"450_300_200_100_10"
 	]
 
-	if method == "LSTM":
-		x_train, y_train = getPathTrainData()
-		# x_test, y_test = getTestData()
-		x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-		x_pred = getPathPredData()
+	method = method.split("_")
+	if method[1] == "LSTM":
+			x_train, y_train = getPathTrainData()
+			# x_test, y_test = getTestData()
+			x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+			x_pred = getPathPredData()
 
-		x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
-		x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
-		x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
-
-	elif method == "LSTMF":
-		x_train, y_train = getFeaturesTrainData()
-		# x_test, y_test = getTestData()
-		x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-		x_pred = getFeaturesPredData()
-
-		x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
-		x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
-		x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
-
+			x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
+			x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+			x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
 	else:
-		x_train, y_train = getFeaturesTrainData()
-		# x_test, y_test = getTestData()
-		x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-		x_pred = getFeaturesPredData()
+		if method[0] == "const"
+			elif method[1] == "LSTMF":
+				x_train, y_train = getConFeaturesTrainData()
+				# x_test, y_test = getTestData()
+				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+				x_pred = getConFeaturesPredData()
+
+				x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
+				x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+				x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
+
+			else:
+				x_train, y_train = getConFeaturesTrainData()
+				# x_test, y_test = getTestData()
+				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+				x_pred = getConFeaturesPredData()
+
+		else:
+			elif method[1] == "LSTMF":
+				x_train, y_train = getFeaturesTrainData()
+				# x_test, y_test = getTestData()
+				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+				x_pred = getFeaturesPredData()
+
+				x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
+				x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+				x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
+
+			else:
+				x_train, y_train = getFeaturesTrainData()
+				# x_test, y_test = getTestData()
+				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+				x_pred = getFeaturesPredData()
+
 
 	print(x_train.shape, y_train.shape)
 	print(x_test.shape, y_test.shape)
@@ -223,10 +243,23 @@ def getFeatures(dict, time):
 	features.append(std)
 	features.append(var)
 	features.append(rms)
-	features.append(time)
+	# features.append(time)
 	features.append(np.nanmean(a))
 
 	return features
+
+# new idea
+# Get chunks of 2-second of data
+# get the angle 
+# do the integration
+# calculate the path vector (xx, xy, xz)
+# apply the rotation matrix to turn it back to a default coordinate system
+# apply the rotation matrix 
+
+# spin it using pitch and azimuth 
+# do this to get the direction that predominantly determines the pumping and pushing
+
+# integrate acceleration data to get velocity and record the change of sign
 
 # get a period, which means when it changes direction twice
 def getTimes(y, timeData):
@@ -322,6 +355,46 @@ def getFeaWindow(dataset):
 
 	return np.array(features) 
 
+def getFeaWindowConstSec(dataset, numSec):
+	features = []
+	j = 0
+	dict = {"xx": [], "xy": [], "xz": [], "az": [], "ax": [], "ay": [], "Azimuth": [], "Pitch": [], "Roll": []}
+
+	for i in range(len(dataset)):
+		# windowx.append(dataset.iloc[i]['x(t)(x)'])
+		# windowy.append(dataset.iloc[i]['x(t)(y)'])
+		# windowz.append(dataset.iloc[i]['x(t)(z)'])
+
+		xz = dataset.iloc[i]['x(t)(z)']
+		xx = dataset.iloc[i]['x(t)(x)']
+		xy = dataset.iloc[i]['x(t)(y)']
+		az = dataset.iloc[i]['az']
+		ax = dataset.iloc[i]['ax']
+		ay = dataset.iloc[i]['ay']
+		Azimuth = dataset.iloc[i]['Azimuth']
+		Pitch = dataset.iloc[i]['Pitch']
+		Roll = dataset.iloc[i]['Roll']
+
+		dict['xx'].append(xx)
+		dict['xy'].append(xy)
+		dict['xz'].append(xz)
+		dict['ax'].append(ax)
+		dict['ay'].append(ay)
+		dict['az'].append(az)
+		dict['Azimuth'].append(Azimuth)
+		dict['Pitch'].append(Pitch)
+		dict['Roll'].append(Roll)
+		# time.append(dataset.iloc[i]['time'])
+
+		if i < len(dataset) and dataset.iloc[i].time - j * numSec >= numSec: # -> it should be the sum so far
+			feature = getFeatures(dict, times[j])
+			features.append(feature)
+			dict = {"xx": [], "xy": [], "xz": [], "az": [], "ax": [], "ay": [], "Azimuth": [], "Pitch": [], "Roll": []}
+			j += 1
+
+
+	return np.array(features) 
+
 def getPathWindow(dataset):
 	features = []
 	for i in range(len(dataset)):
@@ -341,7 +414,7 @@ def find_peaks(arr):
 def getFeaturesTrainData():
 	fileNames = ["pumping_.csv", "pushing_.csv", "pushing_2.csv", "coasting_.csv"]
 
-	x_train = np.array([[0] * 14])
+	x_train = np.array([[0] * 13])
 	y_train = [""]
 	for fileName in fileNames:
 		# xx, xy, xz = [], [], []
@@ -364,7 +437,7 @@ def getFeaturesTrainData():
 		y_train += [fileName.split("_")[0]] * features.shape[0]
 
 	for i in range(len(x_train)):
-		if (x_train[i] == [0]*14).any():
+		if (x_train[i] == [0]*13).any():
 			x_train = np.delete(x_train, i, 0)
 			y_train = np.delete(y_train, i, 0)
 
@@ -379,7 +452,7 @@ def getFeaturesTrainData():
 def getFeaturesPredData():
 	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
 
-	x_pred = np.array([[0] * 14])
+	x_pred = np.array([[0] * 13])
 	for fileName in fileNames:
 		# xx, xy, xz = [], [], []
 		df = normalized_data(fileName)
@@ -397,7 +470,7 @@ def getFeaturesPredData():
 		x_pred = np.concatenate((x_pred, features))
 
 	for i in range(len(x_pred)):
-		if (x_pred[i] == [0]*14).any():
+		if (x_pred[i] == [0]*13).any():
 			x_pred = np.delete(x_pred, i, 0)
 		if i >= len(x_pred) - 1:
 			break
@@ -454,101 +527,6 @@ def getPathPredData():
 
 	return x_pred
 
-# def getFrequenciesTestData(t = 0.36):
-# 	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
-# 	columns = ["az", "ay", "ax", "time"]
-
-
-# 	frequencies = []
-# 	acx, acy, acz = [], [], []
-# 	time = 0 
-# 	for fileName in fileNames:
-# 		df = pd.read_csv(fileName, usecols=columns)
-
-# 		for i in range(len(df)):
-# 			time += df.iloc[i].time 
-# 			acx.append(df.iloc[i].ax)
-# 			acy.append(df.iloc[i].ay)
-# 			acz.append(df.iloc[i].az)
-# 			if i < len(df) and time >= t:
-# 				freqx, freqy, freqz = fft(np.array(acx)), fft(np.array(acy)), fft(np.array(acz))
-# 				frequencies.append((freqx, freqy, freqz))
-# 				acx, acy, acz = [], [], []
-# 				time = 0
-
-# 	x_train, y_train = np.array(frequencies), np.array(["pumping"])
-# 	return x_train, y_train
-	
-def getTrainData():
-	fileNames = ["pumping_.csv", "pushing_.csv", "pushing_2.csv", "coasting_.csv"]
-
-	# df.loc[~(df==0).all(axis=1)]
-	columns = ["az", "ay", "ax", "time", "Azimuth", "Pitch", "Roll"]
-	x_train, y_train = np.array([[0, 0, 0]]), np.array(["Skip"])
-	for fileName in fileNames:
-		df = normalized_data(fileName)
-
-		if fileName.split('_')[0] == "pumping":
-			df = df.loc[(df["time"] > 10) & (df["time"] < df.iloc[-1]["time"] - 3)]
-			df.duplicated(keep='first')
-			y_train = np.append(y_train, ["pumping"] * len(df))
-
-		elif fileName.split('_')[0] == "pushing":
-			y_train = np.append(y_train, ["pushing"] * len(df))
-
-		else: 
-			y_train = np.append(y_train, ["coasting"] * len(df))
-
-		for i in range(len(df)):
-			x_train = np.append(x_train, [[df.iloc[i].ax, df.iloc[i].ay, df.iloc[i].az]], axis=0)
-
-	for i in range(len(x_train)):
-		if (x_train[i] == [0, 0, 0]).any():
-			x_train = np.delete(x_train, i, 0)
-			y_train = np.delete(y_train, i, 0)
-		if i == len(x_train) - 1:
-			break
-
-	return x_train, y_train
-
-# make graphs
-
-def getTestData():
-	x_test, y_test = np.array([[0, 0, 0]]), np.array(["Skip"])
-	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
-	columns = ["az", "ay", "ax", "time"]
-	for fileName in fileNames:
-		df = normalized_data(fileName)
-		y_test = np.append(y_test, ["pumping"] * len(df))
-		for i in range(len(df)):
-	  		x_test = np.append(x_test, [[df.iloc[i].ax, df.iloc[i].ay, df.iloc[i].az]], axis=0)
-
-		for i in range(len(x_test)):
-			if (x_test[i] == [0, 0, 0]).any():
-			  	x_test = np.delete(x_test, i, 0)
-			  	y_test = np.delete(y_test, i, 0)
-			if i == len(x_test) - 1:
-	  			break
-
-	return x_test, y_test
-
-def getPredData():
-	x_pred = np.array([[0, 0, 0]])
-	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
-	columns = ["az", "ay", "ax", "time"]
-	for fileName in fileNames:
-		df = normalized_data(fileName)
-		for i in range(len(df)):
-			x_pred = np.append(x_pred, [[df.iloc[i].ax, df.iloc[i].ay, df.iloc[i].az]], axis=0)
-
-	for i in range(len(x_pred)):
-		if (x_pred[i] == [0, 0, 0]).any():
-			x_pred = np.delete(x_pred, i, 0)
-		if i == len(x_pred) - 1:
-			break
-
-	return x_pred
-
 def calculate_entropy(list_values):
 	counter_values = Counter(list_values).most_common()
 	probabilities = [elem[1]/len(list_values) for elem in counter_values]
@@ -601,6 +579,7 @@ def correspondingShuffle(x, y):
 	shuffled_y = tf.gather(y, shuffled_indices)
 
 	return shuffled_x, shuffled_y
+	
 def writeExperimentalResults(hParams, trainResults, testResults, predictions):
 	f = open("results/models/LSTMF/" + hParams["resultsName"] + "_LSTMF" + ".txt", 'w')
 	f.write(str(hParams) + '\n\n')
@@ -981,13 +960,69 @@ def prediction_result(predictions):
 
 
 def rotation(matrix, alpha, beta, theta):
+	print(alpha, beta, theta)
+	if alpha > 180:
+		alpha = - (180 - alpha % 180)
+
+	if beta > 180:
+		beta = - (180 - beta % 180)
+
+	if theta > 180:
+		theta = - (180 - theta % 180)
+
+	print(alpha, beta, theta)
+	print('______________________________')
+
 	alpha, beta, theta = -alpha * np.pi / 180, -beta * np.pi / 180, -theta * np.pi / 180
-	rotation_matrix = [[np.cos(alpha) * np.cos(beta), np.cos(alpha) * np.sin(beta) * np.sin(theta) - np.sin(alpha) * np.cos(theta), np.cos(alpha) * np.sin(beta) * np.cos(theta) + np.sin(alpha) * np.sin(theta)]
-	                 ,[np.sin(alpha) * np.cos(beta), np.sin(alpha) * np.sin(beta) * np.sin(theta) + np.cos(alpha) * np.cos(theta), np.sin(alpha) * np.sin(beta) * np.sin(theta) - np.cos(alpha) * np.sin(theta)]
-	                 ,[-np.sin(beta), np.cos(beta) * np.sin(theta), np.cos(beta) * np.cos(theta)]]
+	# rotation_matrix = [[np.cos(alpha) * np.cos(beta), np.cos(alpha) * np.sin(beta) * np.sin(theta) - np.sin(alpha) * np.cos(theta), np.cos(alpha) * np.sin(beta) * np.cos(theta) + np.sin(alpha) * np.sin(theta)]
+	#                  ,[np.sin(alpha) * np.cos(beta), np.sin(alpha) * np.sin(beta) * np.sin(theta) + np.cos(alpha) * np.cos(theta), np.sin(alpha) * np.sin(beta) * np.sin(theta) - np.cos(alpha) * np.sin(theta)]
+	#                  ,[-np.sin(beta), np.cos(beta) * np.sin(theta), np.cos(beta) * np.cos(theta)]]
+
+	x_rotation = [[1, 0, 0], [0, np.cos(theta), np.sin(theta)], [0, -np.sin(theta), np.cos(theta)]]
+	y_rotation = [[np.cos(beta), 0, -np.sin(beta)], [0, 1, 0], [np.sin(beta), 0, np.cos(beta)]]
+	z_rotation = [[np.cos(alpha), np.sin(alpha), 0], [-np.sin(alpha), np.cos(alpha), 0], [0, 0, 1]]
 
 
-	return np.matmul(matrix, rotation_matrix) 
+	return np.matmul(matrix, z_rotation) 
+
+# def part_transformation(accelerations):
+# 	transformed_acceleration = []
+# 	positions = []
+
+# 	alpha, beta, theta = df['Azimuth'].iat[index], df['Pitch'].iat[index], df['Roll'].iat[index]
+# 	transformed_acceleration.append(rotation(accelerations, alpha, beta, theta))
+
+# 	df['transformed_ax'] = [x[0] for x in transformed_acceleration]
+# 	df['transformed_ay'] = [x[1] for x in transformed_acceleration]
+# 	df['transformed_az'] = [x[2] for x in transformed_acceleration]
+
+# 	delta_v, xtraw, delta_t, prev_pos, pos = 0, [[0, 0, 0]], 0, [0] * 3, [0] * 3
+
+# 	for i in range(len(df) - 1):
+# 		delta_t = df.iloc[i + 1]['time'] - df.iloc[i]['time'
+# 		delta_v = [delta_t * df.iloc[i]['ax'], delta_t * df.iloc[i]['ay'], delta_t * df.iloc[i]['az']]
+# 		pos = [x + y for (x, y) in zip([2 * y - z for (y, z) in zip(pos, prev_pos)], [delta_t * delta_v[0], delta_t * delta_v[1], delta_t * delta_v[2]])]
+# 		prev_pos = pos
+# 		xtraw.append(pos)
+
+# 	df['x(t)(x)raw'] = [x[0] for x in xtraw] 
+# 	df['x(t)(y)raw'] = [x[1] for x in xtraw]
+# 	df['x(t)(z)raw'] = [x[2] for x in xtraw]
+
+# 	delta_v, xt, delta_t, prev_pos, pos = 0, [[0, 0, 0]], 0, [0] * 3, [0] * 3
+
+# 	for i in range(len(df) - 1):
+# 		delta_t = df.iloc[i + 1]['time'] - df.iloc[i]['time']
+# 		delta_v = [delta_t * df.iloc[i]['transformed_ax'], delta_t * df.iloc[i]['transformed_ay'], delta_t * df.iloc[i]['transformed_az']]
+# 		pos = [x + y for (x, y) in zip([2 * y - z for (y, z) in zip(pos, prev_pos)], [delta_t * delta_v[0], delta_t * delta_v[1], delta_t * delta_v[2]])]
+# 		prev_pos = pos
+# 		xt.append(pos)
+
+# 	df['x(t)(x)'] = [x[0] for x in xt] 
+# 	df['x(t)(y)'] = [x[1] for x in xt]
+# 	df['x(t)(z)'] = [x[2] for x in xt]
+
+# 	return df
 
 def transformation(df):
 
@@ -1029,6 +1064,15 @@ def transformation(df):
 	df['x(t)(z)'] = [x[2] for x in xt]
 
 	return df
+
+def getAngle(side, hypo):
+	return np.arccos(side / hypo)
+
+def normalize_angle(df):
+	for i in range(len(df) - 1):
+		side = df[i + 1].time - df[i].time
+		xx, xy, xz = df[i + 1]['x(t)(x)'] - df[i]['x(t)(x)'], df[i + 1]['x(t)(y)'] - df[i]['x(t)(y)'], df[i + 1]['x(t)(z)'] - df[i]['x(t)(z)']
+		angleX, angleY, angleZ = getAngle(side, xx), getAngle(side, xy), getAngle(side, xz)
 
 def getHParams(expName=None):
 	# Set up what's the same for each experiment
@@ -1143,7 +1187,7 @@ models = [
 	"450_300_200_100_10"
 ]
 
-main("LSTMF")
+main("const_")
 # processResults()
 
-buildOverallResults(models, "LSTMF", "LSTMF")
+# buildOverallResults(models, "LSTMF", "LSTMF")
