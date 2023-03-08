@@ -1,6 +1,12 @@
+import numpy as np
+from dataTrans import *
+from getFeatures import *
+from getWindow import *
+
 # =============== get frequencies after dynamic seconds in dataset ============== #
 def getFeaturesTrainData():
 	fileNames = ["pumping_.csv", "pushing_.csv", "pushing_2.csv", "coasting_.csv"]
+	fileNames = ["../data/" + name for name in fileNames]
 
 	x_train = np.array([[0] * 13])
 	y_train = [""]
@@ -31,6 +37,7 @@ def getFeaturesTrainData():
 
 def getFeaturesPredData():
 	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
+	fileNames = ["../data/" + name for name in fileNames]
 
 	x_pred = np.array([[0] * 13])
 	for fileName in fileNames:
@@ -51,6 +58,7 @@ def getFeaturesPredData():
 # =============== get frequencies after constant seconds in dataset ============== #
 def getConFeaturesTrainData():
 	fileNames = ["pumping_.csv", "pushing_.csv", "pushing_2.csv", "coasting_.csv"]
+	fileNames = ["../data/" + name for name in fileNames]
 
 	x_train = np.array([[0] * 13])
 	y_train = [""]
@@ -61,7 +69,7 @@ def getConFeaturesTrainData():
 			df = df.loc[(df["time"] > 10) & (df["time"] < df.iloc[-1]["time"] - 3)]
 
 		df = transformation(df)
-		features = getFeaWindowConstSec(df, 2)
+		features, df = getFeaWindowConstSec(df, 2)
 		x_train = np.concatenate((x_train, features))
 
 		y_train += [fileName.split("_")[0]] * features.shape[0]
@@ -81,6 +89,7 @@ def getConFeaturesTrainData():
 
 def getConFeaturesPredData():
 	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
+	fileNames = ["../data/" + name for name in fileNames]
 
 	x_pred = np.array([[0] * 13])
 	for fileName in fileNames:
@@ -88,7 +97,7 @@ def getConFeaturesPredData():
 		df = normalized_data(fileName)
 
 		df = transformation(df)
-		features = getFeaWindow2Sec(df, 2)
+		features, df = getFeaWindowConstSec(df, 2)
 		x_pred = np.concatenate((x_pred, features))
 
 	for i in range(len(x_pred)):
@@ -102,6 +111,7 @@ def getConFeaturesPredData():
 # =============== get displacements after seconds in dataset ============== #
 def getPathTrainData():
 	fileNames = ["pumping_.csv", "pushing_.csv", "pushing_2.csv", "coasting_.csv"]
+	fileNames = ["../data/" + name for name in fileNames]
 
 	x_train = np.array([[0] * 3])
 	y_train = [""]
@@ -131,6 +141,7 @@ def getPathTrainData():
 
 def getPathPredData():
 	fileNames = ["longboard.csv", "longboard2.csv", "mixed.csv", "mixed (pushing, pumping, coasting. carving).csv"]
+	fileNames = ["../data/" + name for name in fileNames]
 
 	x_pred = np.array([[0] * 3])
 	for fileName in fileNames:

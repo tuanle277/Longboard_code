@@ -1,3 +1,6 @@
+from dataTrans import *
+from getFeatures import *
+
 # new idea
 # Get chunks of 2-second of data
 # get the angle 
@@ -20,8 +23,6 @@ def getTimes(y, timeData):
 
 	times.append(timeData[len(timeData) - 1])
 	# print(times)
-
-
 
 	# times = []
 	# record = 0
@@ -109,12 +110,11 @@ def getFeaWindowConstSec(dataset, numSec):
 	features = []
 	j = 0
 	dict = {"xx": [], "xy": [], "xz": [], "az": [], "ax": [], "ay": [], "Azimuth": [], "Pitch": [], "Roll": []}
+	xangss, yangss, zangss = [], [], []
+	last = []
+	xLast, yLast, zLast = [], [], []
 
 	for i in range(len(dataset)):
-		# windowx.append(dataset.iloc[i]['x(t)(x)'])
-		# windowy.append(dataset.iloc[i]['x(t)(y)'])
-		# windowz.append(dataset.iloc[i]['x(t)(z)'])
-
 		xz = dataset.iloc[i]['x(t)(z)']
 		xx = dataset.iloc[i]['x(t)(x)']
 		xy = dataset.iloc[i]['x(t)(y)']
@@ -136,11 +136,33 @@ def getFeaWindowConstSec(dataset, numSec):
 		dict['Roll'].append(Roll)
 		# time.append(dataset.iloc[i]['time'])
 
-		if i < len(dataset) and dataset.iloc[i].time - j * numSec >= numSec: # -> it should be the sum so far
-			feature = getFeatures(dict, times[j])
+		if i == len(dataset) - 1 or (i < len(dataset) and dataset.iloc[i].time - j * numSec >= numSec): # -> it should be the sum so far
+			print(dataset.iloc[i].time, j * numSec)
+			xang, yang, zang = normalize_vector(dict['xx'], dict['xy'], dict['xz'])
+			# xangss += xangs 
+			# yangss += yangs 
+			# zangss += zangs
+			for i in range(len(dict['xx'])):
+				matrix = (dict['xx'][i], dict['xy'][i], dict['xz'][i])
+				last = rotation(matrix, zang, 0, xang)
+				dict['xx'][i] = last[0]
+				dict['xy'][i] = last[1]
+				dict['xz'][i] = last[2]
+
+			feature = getConstFeatures(dict)
 			features.append(feature)
 			dict = {"xx": [], "xy": [], "xz": [], "az": [], "ax": [], "ay": [], "Azimuth": [], "Pitch": [], "Roll": []}
 			j += 1
 
+	# for i in range(len(dataset)):
+	# 	matrix = [dataset['x(t)(x)'].iat[i], dataset['x(t)(y)'].iat[i], dataset['x(t)(z)'].iat[i]]
+	# 	last = rotation(matrix, zangss[i], 0, xangss[i])
+	# 	xLast.append(last[0])
+	# 	yLast.append(last[1])
+	# 	zLast.append(last[2])
 
-	return np.array(features) 
+	# dataset['xLast'], dataset['yLast'], dataset['zLast'] = xLast, yLast, zLast 
+
+	return np.array(features), dataset
+
+
