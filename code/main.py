@@ -1,11 +1,10 @@
-# since the quantitative values of the wave frequency is arbitrary depending on the ride, so the frenquency alone would be inefficient
+ # since the quantitative values of the wave frequency is arbitrary depending on the ride, so the frenquency alone would be inefficient
 
 
 import os
 import time
 import numpy as np
 import pandas as pd
-import scipy.io as sio
 import tensorflow as tf
 import timeit
 
@@ -16,9 +15,7 @@ from dataTrans import *
 
 import matplotlib.pyplot as plt
 import pywt
-import scipy.stats
 import json
-import scipy.signal
 
 import datetime as dt
 
@@ -62,7 +59,7 @@ def main(method):
 		"50_10",
 		"70_20",
 		"100_50_10",
-		"200_50_10"
+		"200_50_10",
 		"300_50_10",
 		"300_100_10",
 		"300_200_10",
@@ -74,49 +71,40 @@ def main(method):
 	]
 
 	method = method.split("_")
-	if method[1] == "LSTM":
+	if method[0] == "LSTM":
+			print("Method run: LSTM")
 			x_train, y_train = getPathTrainData()
-			# x_test, y_test = getTestData()
 			x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
 			x_pred = getPathPredData()
 
 			x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
 			x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
 			x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
+
+	elif method[0] == "LSTMF":
+			print("Method run: LSTMF")
+			x_train, y_train = getFeaturesTrainData()
+			x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+			x_pred = getFeaturesPredData()
+
+			x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
+			x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+			x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
 	else:
-		if method[0] == "const":
-			if method[1] == "LSTMF":
-				x_train, y_train = getConFeaturesTrainData()
-				# x_test, y_test = getTestData()
-				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-				x_pred = getConFeaturesPredData()
+		print("Method run: const")
+		if method[1] == "LSTMF":
+			x_train, y_train = getConFeaturesTrainData()
+			x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+			x_pred = getConFeaturesPredData()
 
-				x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
-				x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
-				x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
-
-			else:
-				x_train, y_train = getConFeaturesTrainData()
-				# x_test, y_test = getTestData()
-				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-				x_pred = getConFeaturesPredData()
+			x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
+			x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+			x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
 
 		else:
-			if method[1] == "LSTMF":
-				x_train, y_train = getFeaturesTrainData()
-				# x_test, y_test = getTestData()
-				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-				x_pred = getFeaturesPredData()
-
-				x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
-				x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
-				x_pred = x_pred.reshape((x_pred.shape[0], 1, x_pred.shape[1]))
-
-			else:
-				x_train, y_train = getFeaturesTrainData()
-				# x_test, y_test = getTestData()
-				x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
-				x_pred = getFeaturesPredData()
+			x_train, y_train = getConFeaturesTrainData()
+			x_test, y_test = x_train[:int(0.25 * x_train.shape[0])], y_train[:int(0.25 * y_train.shape[0])]
+			x_pred = getConFeaturesPredData()
 
 
 	print(x_train.shape, y_train.shape)
@@ -135,88 +123,89 @@ def main(method):
 		trainResults, testResults, predictions = learn(dataSubsets, hParams)
 		writeExperimentalResults(hParams, trainResults, testResults, predictions)
 
-	
-# def writeExperimentalResults(hParams, trainResults, testResults, predictions):
-# 	f = open("results/models/LSTMF/" + hParams["resultsName"] + "_LSTMF" + ".txt", 'w')
-# 	f.write(str(hParams) + '\n\n')
-# 	f.write(str(trainResults) + '\n\n')
-# 	f.write(str(testResults) + '\n\n')
+# ================================================================
+# ================================================================
+def writeExperimentalResults(hParams, trainResults, testResults, predictions):
+	f = open("../results/models/LSTMF/" + hParams["resultsName"] + "_LSTMF" + ".txt", 'w')
+	f.write(str(hParams) + '\n\n')
+	f.write(str(trainResults) + '\n\n')
+	f.write(str(testResults) + '\n\n')
 
-# 	f1 = open("results/models/LSTMF/" + hParams["predictName"] + "_LSTMF" + ".txt", 'w')
-# 	f1.write(str(hParams) + '\n\n')
-# 	f1.write(str(predictions))
+	f1 = open("../results/models/LSTMF/" + hParams["predictName"] + "_LSTMF" + ".txt", 'w')
+	f1.write(str(hParams) + '\n\n')
+	f1.write(str(predictions))
 
-# 	percentReport = prediction_result(predictions)
-# 	writePercentReport(hParams, percentReport)
+	percentReport = prediction_result(predictions)
+	writePercentReport(hParams, percentReport)
 
-# 	f.close()
-# 	f1.close()
+	f.close()
+	f1.close()
 
-# def writePercentReport(hParams, percentReport):
-# 	ff = open("results/models/LSTMF/" + hParams["percentName"] + "_LSTMF" + ".txt", 'w')
-# 	ff.write(percentReport)
-# 	ff.close()
+def writePercentReport(hParams, percentReport):
+	ff = open("../results/models/LSTMF/" + hParams["percentName"] + "_LSTMF" + ".txt", 'w')
+	ff.write(str(percentReport))
+	ff.close()
 
-# def writePredictions(hParams, predictions):
-# 	ff = open("results/models/LSTMF/" + hParams["predictName"] + "_LSTMF" + ".txt", 'w')
-# 	ff.write(str(predictions))
-# 	ff.close()
+def writePredictions(hParams, predictions):
+	ff = open("../results/models/LSTMF/" + hParams["predictName"] + "_LSTMF" + ".txt", 'w')
+	ff.write(str(predictions))
+	ff.close()
 
-# def readExperimentalResults(fileName):
-# 	f = open("results/models/LSTMF/" + fileName + ".txt",'r')
-# 	data = f.read().split('\n\n')
+def readExperimentalResults(fileName):
+	f = open("../results/models/LSTMF/" + fileName + "_LSTMF" + ".txt",'r')
+	data = f.read().split('\n\n')
 
-# 	data[0] = data[0].replace("\'", "\"")
-# 	data[1] = data[1].replace("\'", "\"")
+	data[0] = data[0].replace("\'", "\"")
+	data[1] = data[1].replace("\'", "\"")
 
-# 	hParams = json.loads(data[0])
-# 	trainResults = json.loads(data[1])
-# 	testResults = json.loads(data[2])
+	hParams = json.loads(data[0])
+	trainResults = json.loads(data[1])
+	testResults = json.loads(data[2])
 
-# 	return hParams, trainResults, testResults
+	return hParams, trainResults, testResults
 
-# def readPredResults(fileName):
-# 	f = open("results/models/LSTMF/" + fileName + ".txt", "r")
-# 	data = f.read().split('\n\n')
+def readPredResults(fileName):
+	f = open("../results/models/LSTMF/" + fileName + "_LSTMF" + ".txt", "r")
+	data = f.read().split('\n\n')
 
-# 	data[0] = data[0].replace("\'", "\"")
-# 	data[1] = data[1].replace("\'", "\"")
+	data[0] = data[0].replace("\'", "\"")
+	data[1] = data[1].replace("\'", "\"")
 
-# 	hParams = json.loads(data[0])
-# 	predictions = json.loads(data[1])
-# 	return hParams, predictions
+	hParams = json.loads(data[0])
+	predictions = json.loads(data[1])
+	return hParams, predictions
 
-# def plotPredictions(predictions, title):
-# 	plotCurves(x=np.array([x for x in range(len(predictios))]), 
-# 				yList= predictions, 
-# 				xLabel="time (t)", 
-# 				yLabelList=itemsToPlot, 
-# 				title= title + "predictions")
+def plotPredictions(predictions, title):
+	plotCurves(x=np.array([x for x in range(len(predictios))]), 
+				yList= predictions, 
+				xLabel="time (t)", 
+				yLabelList=itemsToPlot, 
+				title= title + "predictions")
 
-# def plotCurves(x, yList, xLabel="", yLabelList=[], title=""):
-# 	fig, ax = plt.subplots()
-# 	y = np.array(yList).transpose()
-# 	ax.plot(x, y)
-# 	ax.set(xlabel=xLabel, title=title)
-# 	plt.legend(yLabelList, loc='best', shadow=True)
-# 	ax.grid()
-# 	yLabelStr = "__" + "__".join([label for label in yLabelList])
-# 	filepath = "results/models/LSTMF/" + title + " " + yLabelStr + ".png"
-# 	fig.savefig(filepath)
-# 	print("Figure saved in", filepath)
+def plotCurves(x, yList, xLabel="", yLabelList=[], title=""):
+	fig, ax = plt.subplots()
+	y = np.array(yList).transpose()
+	ax.plot(x, y)
+	ax.set(xlabel=xLabel, title=title)
+	plt.legend(yLabelList, loc='best', shadow=True)
+	ax.grid()
+	yLabelStr = "__" + "__".join([label for label in yLabelList])
+	filepath = "../results/models/LSTMF/" + title + " " + yLabelStr + ".png"
+	fig.savefig(filepath)
+	print("Figure saved in", filepath)
 
-# def plotPoints(xList, yList, pointLabels=[], xLabel="", yLabel="", title="", filename="pointPlot"):
-# 	plt.figure()
-# 	plt.scatter(xList,yList)
-# 	plt.xlabel(xLabel)
-# 	plt.ylabel(yLabel)
-# 	plt.title(title)
-# 	if pointLabels != []:
-# 		for i, label in enumerate(pointLabels):
-# 			plt.annotate(label, (xList[i], yList[i]))
-# 	filepath = "results/models/LSTMF/" + filename + ".png"
-# 	plt.savefig(filepath)
-# 	print("Figure saved in", filepath)
+def plotPoints(xList, yList, pointLabels=[], xLabel="", yLabel="", title="", filename="pointPlot"):
+	plt.figure()
+	plt.scatter(xList,yList)
+	plt.xlabel(xLabel)
+	plt.ylabel(yLabel)
+	plt.title(title)
+	if pointLabels != []:
+		for i, label in enumerate(pointLabels):
+			plt.annotate(label, (xList[i], yList[i]))
+	filepath = "../results/models/LSTMF/" + filename + ".png"
+	plt.savefig(filepath)
+	print("Figure saved in", filepath)
 
 
 # ===========================================================================================================================
@@ -392,87 +381,83 @@ def main(method):
 # ===========================================================================================================================
 # ===========================================================================================================================
 
-def writeExperimentalResults(hParams, trainResults, testResults, predictions):
-	f = open("../results/constt/features/" + hParams["resultsName"]  + ".txt", 'w')
-	f.write(str(hParams) + '\n\n')
-	f.write(str(trainResults) + '\n\n')
-	f.write(str(testResults) + '\n\n')
+# def writeExperimentalResults(hParams, trainResults, testResults, predictions):
+# 	f = open("../results/constt/features/" + hParams["resultsName"]  + ".txt", 'w')
+# 	f.write(str(hParams) + '\n\n')
+# 	f.write(str(trainResults) + '\n\n')
+# 	f.write(str(testResults) + '\n\n')
 
-	f1 = open("../results/constt/features/" + hParams["predictName"] + ".txt", 'w')
-	f1.write(str(hParams) + '\n\n')
-	f1.write(str(predictions))
+# 	f1 = open("../results/constt/features/" + hParams["predictName"] + ".txt", 'w')
+# 	f1.write(str(hParams) + '\n\n')
+# 	f1.write(str(predictions))
 
-	percentReport = prediction_result(predictions)
-	writePercentReport(hParams, percentReport)
+# 	percentReport = prediction_result(predictions)
+# 	writePercentReport(hParams, percentReport)
 
-	f.close()
-	f1.close()
+# 	f.close()
+# 	f1.close()
 
-def writePercentReport(hParams, percentReport):
-	ff = open("../results/constt/features/" + hParams["percentName"] + ".txt", 'w')
-	ff.write(percentReport)
-	ff.close()
+# def writePercentReport(hParams, percentReport):
+# 	ff = open("../results/constt/features/" + hParams["percentName"] + ".txt", 'w')
+# 	ff.write(str(percentReport))
+# 	ff.close()
 
-def writePredictions(hParams, predictions):
-	ff = open("../results/constt/features/" + hParams["predictName"] + ".txt", 'w')
-	ff.write(str(predictions))
-	ff.close()
+# def writePredictions(hParams, predictions):
+# 	ff = open("../results/constt/features/" + hParams["predictName"] + ".txt", 'w')
+# 	ff.write(str(predictions))
+# 	ff.close()
 
-def readExperimentalResults(fileName):
-	f = open("../results/constt/features/" + fileName + ".txt",'r')
-	data = f.read().split('\n\n')
+# def readExperimentalResults(fileName):
+# 	f = open("../results/constt/features/" + fileName + ".txt",'r')
+# 	data = f.read().split('\n\n')
 
-	data[0] = data[0].replace("\'", "\"")
-	data[1] = data[1].replace("\'", "\"")
+# 	data[0] = data[0].replace("\'", "\"")
+# 	data[1] = data[1].replace("\'", "\"")
 
-	hParams = json.loads(data[0])
-	trainResults = json.loads(data[1])
-	testResults = json.loads(data[2])
+# 	hParams = json.loads(data[0])
+# 	trainResults = json.loads(data[1])
+# 	testResults = json.loads(data[2])
 
-	return hParams, trainResults, testResults
+# 	return hParams, trainResults, testResults
 
-def readPredResults(fileName):
-	f = open("../results/constt/features/" + fileName + ".txt", "r")
-	data = f.read().split('\n\n')
+# def readPredResults(fileName):
+# 	f = open("../results/constt/features/" + fileName + ".txt", "r")
+# 	data = f.read().split('\n\n')
 
-	data[0] = data[0].replace("\'", "\"")
-	data[1] = data[1].replace("\'", "\"")
+# 	data[0] = data[0].replace("\'", "\"")
+# 	data[1] = data[1].replace("\'", "\"")
 
-	hParams = json.loads(data[0])
-	predictions = json.loads(data[1])
-	return hParams, predictions
+# 	hParams = json.loads(data[0])
+# 	predictions = json.loads(data[1])
+# 	return hParams, predictions
 
-def plotPredictions(predictions, title):
-	plotCurves(x=np.array([x for x in range(len(predictios))]), 
-				yList= predictions, 
-				xLabel="time (t)", 
-				yLabelList=itemsToPlot, 
-				title= title + "predictions")
+# def plotCurves(x, yList, xLabel="", yLabelList=[], title=""):
+# 	fig, ax = plt.subplots()
+# 	y = np.array(yList).transpose()
+# 	ax.plot(x, y)
+# 	ax.set(xlabel=xLabel, title=title)
+# 	plt.legend(yLabelList, loc='best', shadow=True)
+# 	ax.grid()
+# 	yLabelStr = "__" + "__".join([label for label in yLabelList])
+# 	filepath = "../results/constt/features/" + title + " " + yLabelStr + ".png"
+# 	fig.savefig(filepath)
+# 	print("Figure saved in", filepath)
 
-def plotCurves(x, yList, xLabel="", yLabelList=[], title=""):
-	fig, ax = plt.subplots()
-	y = np.array(yList).transpose()
-	ax.plot(x, y)
-	ax.set(xlabel=xLabel, title=title)
-	plt.legend(yLabelList, loc='best', shadow=True)
-	ax.grid()
-	yLabelStr = "__" + "__".join([label for label in yLabelList])
-	filepath = "../results/constt/features/" + title + " " + yLabelStr + ".png"
-	fig.savefig(filepath)
-	print("Figure saved in", filepath)
+# def plotPoints(xList, yList, pointLabels=[], xLabel="", yLabel="", title="", filename="pointPlot"):
+# 	plt.figure()
+# 	plt.scatter(xList,yList)
+# 	plt.xlabel(xLabel)
+# 	plt.ylabel(yLabel)
+# 	plt.title(title)
+# 	if pointLabels != []:
+# 		for i, label in enumerate(pointLabels):
+# 			plt.annotate(label, (xList[i], yList[i]))
+# 	filepath = "../results/constt/features/" + filename + ".png"
+# 	plt.savefig(filepath)
+	# print("Figure saved in", filepath)
 
-def plotPoints(xList, yList, pointLabels=[], xLabel="", yLabel="", title="", filename="pointPlot"):
-	plt.figure()
-	plt.scatter(xList,yList)
-	plt.xlabel(xLabel)
-	plt.ylabel(yLabel)
-	plt.title(title)
-	if pointLabels != []:
-		for i, label in enumerate(pointLabels):
-			plt.annotate(label, (xList[i], yList[i]))
-	filepath = "../results/constt/features/" + filename + ".png"
-	plt.savefig(filepath)
-	print("Figure saved in", filepath)
+# ===============================================================
+# =================================================================
 
 def processResults():
 	hParams, trainResults, testResults = readExperimentalResults("results")
@@ -567,6 +552,44 @@ def buildOverallResults(fileNames, title, folderName):
     fig.savefig(filepath, dpi=200)
     print("Figure saved in", filepath)
 
+def plotPredictions(y_test, predictions, title):
+	# plotCurves(x=np.array([x for x in range(len(predictios))]), 
+	# 			yList= predictions, 
+	# 			xLabel="time (t)", 
+	# 			yLabelList=itemsToPlot, 
+	# 			title= title + "predictions")
+
+    train = y_test
+    train = y_test[:int(len(y_test)-len(predictions))]
+    valid = y_test[int(len(y_test)-len(predictions)):]
+    #visualize the data
+    plt.figure(figsize=(16,6))
+    plt.title('Model')
+    plt.xlabel('time', fontsize=18)
+    plt.ylabel('activity', fontsize=18)
+    plt.plot(train)
+    plt.plot(valid)
+    plt.plot(predictions)
+    plt.legend(['Train', 'Val', 'Predictions'], loc='lower right')
+    plt.savefig(title+"prediction")
+    # plt.show()
+
+
+
+    # train = df['Close']
+    # train = df[:int(len(df)-len(predictions))]
+    # valid = df[int(len(df)-len(predictions)):]
+    # valid['Predictions'] = predictions
+    # #visualize the data
+    # plt.figure(figsize=(16,6))
+    # plt.title('Model')
+    # plt.xlabel('Date', fontsize=18)
+    # plt.ylabel('Close Price USD ($)', fontsize=18)
+    # plt.plot(train['Close'])
+    # plt.plot(valid[['Close', 'Predictions']])
+    # plt.legend(['Train', 'Val', 'Predictions'], loc='lower right')
+    # plt.show()
+
     # hParams = readExperimentalResults(fileNames[0]+"_results_LSTM")[0]
 
     # # == plot curves with yList being the validation accuracies == #
@@ -615,11 +638,14 @@ def buildOverallResults(fileNames, title, folderName):
 
 
 def prediction_result(predictions):
-	pred = {"pumping": 0, "pushing": 0, "coasting": 0}
+	pred = {"pumping": 0, "pushing": 0, "coasting": 0, "carving": 0}
 	for p in predictions:
 		pred[p] += 1
 
-	percentReport = "Percentage of pumping: " + "{:.1f}%".format(100 * pred["pumping"]/len(predictions), "%") + '\n' + "Percentage of pushing: " + "{:.1f}%".format(100 * pred["pushing"]/len(predictions), "%")+ '\n' + "Percentage of coasting: " + "{:.1f}%".format(100 * pred["coasting"]/len(predictions), "%")
+	percentReport = "Percentage of pumping: " + "{:.1f}%".format(100 * pred["pumping"]/len(predictions), "%"),
+	'\n' + "Percentage of pushing: " + "{:.1f}%".format(100 * pred["pushing"]/len(predictions), "%"),
+	'\n' + "Percentage of coasting: " + "{:.1f}%".format(100 * pred["coasting"]/len(predictions), "%",
+	'\n' + "Percentage of carving: " + "{:.1f}%".format(100 * pred["carving"]/len(predictions), "%"))
 	return percentReport
 
 def getHParams(expName=None):
@@ -628,7 +654,7 @@ def getHParams(expName=None):
 		'experimentName': expName,
 		'datasetProportion': 1.0,
 		'valProportion': 0.1,
-		'numEpochs': 50
+		'numEpochs': 100
 	}
 	shortTest = False # hardcode to True to run a quick debugging test
 	if shortTest:
@@ -654,13 +680,18 @@ def getHParams(expName=None):
 
 
 def learn(dataSubsets, hParams):
+	activities = ["pumping", "pushing", "coasting", "carving"]
+
 	x_train, y_train, x_test, y_test, x_pred = dataSubsets
 
 	x_train, y_train = correspondingShuffle(x_train, y_train)
 	x_test, y_test = correspondingShuffle(x_test, y_test)
 
-	y_train = np.array([int(x == "pumping") for x in y_train])
-	y_test = np.array([int(x == "pumping") for x in y_test])
+	print("y train is: ", y_train)	
+	print("y test is: ", y_test)
+
+	y_train = np.array([activities.index(x) for x in y_train])
+	y_test = np.array([activities.index(x) for x in y_test])
 
 	x_val = x_train[:int(hParams['valProportion'] * x_train.shape[0])]
 	y_val = y_train[:int(hParams['valProportion'] * y_train.shape[0])]
@@ -668,29 +699,25 @@ def learn(dataSubsets, hParams):
 	x_train = x_train[int(hParams['valProportion'] * x_train.shape[0]):]
 	y_train = y_train[int(hParams['valProportion'] * y_train.shape[0]):]
 
-	print(x_train.shape)
-
 	# == Sequential Constructor == #
 	startTime = timeit.default_timer()
 	model = tf.keras.Sequential()
 
 	# long short term memory for time-series classification
-	# model.add(tf.keras.layers.LSTM(128, input_shape=(x_train.shape[1:]), activation='relu', return_sequences=True))
-	# model.add(tf.keras.layers.Dropout(0.2))
-
-	# model.add(tf.keras.layers.LSTM(128, activation='relu'))
-	# model.add(tf.keras.layers.Dropout(0.1))
+	model.add(tf.keras.layers.LSTM(128, input_shape=(x_train.shape[1:]), activation='relu', return_sequences=True))
+	model.add(tf.keras.layers.LSTM(128, activation='relu', return_sequences=True))
+	model.add(tf.keras.layers.LSTM(128, activation='relu'))
 
 	for layer in hParams['denseLayers']:
 		model.add(tf.keras.layers.Dense(layer, activation='relu'))
 
-	model.add(tf.keras.layers.Dense(3, activation='softmax'))
+	model.add(tf.keras.layers.Dense(4, activation='softmax'))
 
 	# == Loss function == #
 	lossFunc = tf.keras.losses.SparseCategoricalCrossentropy()
 
 	# == fitting == #
-	model.compile(loss=lossFunc, optimizer='adam', metrics=['accuracy'])
+	model.compile(loss=lossFunc, optimizer='adam', metrics=['accuracy', 'mae'])
 	hist = model.fit(x_train, y_train, 
 						validation_data=(x_val, y_val) 
 							if hParams['valProportion']!=0.0 
@@ -705,14 +732,19 @@ def learn(dataSubsets, hParams):
 	print('Training time:', trainingTime)
 	print(model.evaluate(x_test, y_test))
 	hParams['paramCount'] = model.count_params()
-	pred = model.predict(x_pred)
+	pred = model.predict(x_test)
 	predictions = []
-	pos = ["pumping", "pushing", "coasting"]
+	pos = ["pumping", "pushing", "coasting", "carving"]
+
 	for i in range(len(pred)):
 		m = pred[i].max()
 		for j in range(len(pred[i])):
 			if pred[i][j] == m:
 				predictions.append(pos[j])
+
+	print("y predict is: ", predictions)
+
+	plotPredictions(y_test, predictions, hParams["experimentName"])
 
 	return hist.history, model.evaluate(x_test, y_test), predictions
 
@@ -724,7 +756,7 @@ models = [
 	"50_10",
 	"70_20",
 	"100_50_10",
-	"200_50_10"
+	"200_50_10",
 	"300_50_10",
 	"300_100_10",
 	"300_200_10",
@@ -735,7 +767,7 @@ models = [
 	"450_300_200_100_10"
 ]
 
-main("const_")
+main("LSTMF_")
 # processResults()
 
-buildOverallResults(models, "", "features")
+buildOverallResults(models, "", "LSTMF")

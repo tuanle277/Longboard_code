@@ -67,11 +67,11 @@ def transformation(df):
 def getAngle(side, hypo):
 	return np.arccos(side / hypo)
 
-def normalize_angle(df):
-	for i in range(len(df) - 1):
-		side = df[i + 1].time - df[i].time
-		xx, xy, xz = df[i + 1]['x(t)(x)'] - df[i]['x(t)(x)'], df[i + 1]['x(t)(y)'] - df[i]['x(t)(y)'], df[i + 1]['x(t)(z)'] - df[i]['x(t)(z)']
-		angleX, angleY, angleZ = getAngle(side, xx), getAngle(side, xy), getAngle(side, xz)
+# def normalize_angle(df):
+	# for i in range(len(df) - 1):
+		# side = df[i + 1].time - df[i].time
+		# xx, xy, xz = df[i + 1]['x(t)(x)'] - df[i]['x(t)(x)'], df[i + 1]['x(t)(y)'] - df[i]['x(t)(y)'], df[i + 1]['x(t)(z)'] - df[i]['x(t)(z)']
+		# angleX, angleY, angleZ = getAngle(side, xx), getAngle(side, xy), getAngle(side, xz)
 
 
 # input: arrays of displacement vectors in 3 dimensions after 2 seconds
@@ -79,13 +79,12 @@ def normalize_angle(df):
 def normalize_vector(xx, xy, xz):
 	lx, ly, lz = xx[-1] - xx[0], xy[-1] - xy[0], xz[-1] - xz[0]
 	hypo = (lx ** 2 + ly ** 2 + lz ** 2) ** 0.5 
-	xang, yang, zang = getAngle(lx, hypo), getAngle(ly, hypo), getAngle(lz, hypo)
+	side1 = (lx ** 2 + ly ** 2) ** 0.5
+	side2 = ly
+	newRoll = np.arccos(side1 / hypo)
+	newAzimuth = np.arccos(side2 / hypo)
 
-	# xangs = [xang] * len(xx)
-	# yangs = [yang] * len(xy)
-	# zangs = [zang] * len(xz)
-
-	return xang, yang, zang
+	return newRoll, newAzimuth
 
 
 # what if the dimensions are divided into 2 parts, one part contains 2 dimensions and the other 1, the part where the derivative is lowest is deemed to be the dimension of movement, and the other 2 are the dimensions of wave oscillation
@@ -122,5 +121,7 @@ def correspondingShuffle(x, y):
 
 	shuffled_x = tf.gather(x, shuffled_indices)
 	shuffled_y = tf.gather(y, shuffled_indices)
+
+	print(type(shuffled_x))
 
 	return shuffled_x, shuffled_y

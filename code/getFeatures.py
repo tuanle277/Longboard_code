@@ -72,12 +72,12 @@ def getFeatures(dict, time):
 		x1 = np.array(dict["xx"])
 		x2 = np.array(dict["xy"])
 
-	if most == devP:
-		y = np.array(dict["xy"])
-	elif most == devR:
-		y = np.array(dict["xx"])
-	else:
-		y = np.array(dict["xz"])
+	# if most == devP:
+	# 	y = np.array(dict["xy"])
+	# elif most == devR:
+	# 	y = np.array(dict["xx"])
+	# else:
+	# 	y = np.array(dict["xz"])
 
 
 	newthing1 = np.array([x - x1.mean() for x in x1])
@@ -106,32 +106,146 @@ def getFeatures(dict, time):
 		if yf2[i] == peak2:
 			freq2 = xf2[i]
 
-	n5 = np.nanpercentile(y, 5)
-	n25 = np.nanpercentile(y, 25)
-	n75 = np.nanpercentile(y, 75)
-	n95 = np.nanpercentile(y, 95)
-	median = np.nanpercentile(y, 50)
-	mean = np.nanmean(y)
-	std = np.nanstd(y)
-	var = np.nanvar(y)
-	rms = np.nanmean(np.sqrt(y**2))
+	n51 = np.nanpercentile(x1, 5)
+	n251 = np.nanpercentile(x1, 25)
+	n751 = np.nanpercentile(x1, 75)
+	n951 = np.nanpercentile(x1, 95)
+	median1 = np.nanpercentile(x1, 50)
+	mean1 = np.nanmean(x1)
+	std1 = np.nanstd(x1)
+	var1 = np.nanvar(x1)
+	rms1 = np.nanmean(np.sqrt(x1**2))
+
+	n52 = np.nanpercentile(x2, 5)
+	n252 = np.nanpercentile(x2, 25)
+	n752 = np.nanpercentile(x2, 75)
+	n952 = np.nanpercentile(x2, 95)
+	median2 = np.nanpercentile(x2, 50)
+	mean2 = np.nanmean(x2)
+	std2 = np.nanstd(x2)
+	var2 = np.nanvar(x2)
+	rms2 = np.nanmean(np.sqrt(x2**2))
 
 	features.append(freq1 + freq2)
-	features.append(y.max())
-	features.append(y.min())
-	features.append(n5)
-	features.append(n25)
-	features.append(n75)
-	features.append(n95)
-	features.append(median)
-	features.append(mean)
-	features.append(std)
-	features.append(var)
-	features.append(rms)
+
+	features.append(x1.max())
+	features.append(x1.min())
+	features.append(x2.max())
+	features.append(x2.min())
+
+	features.append(n51)
+	features.append(n251)
+	features.append(n751)
+	features.append(n951)
+	features.append(median1)
+	features.append(mean1)
+	features.append(std1)
+	features.append(var1)
+	features.append(rms1)
+
+	features.append(n52)
+	features.append(n252)
+	features.append(n752)
+	features.append(n952)
+	features.append(median2)
+	features.append(mean2)
+	features.append(std2)
+	features.append(var2)
+	features.append(rms2)
+
 	# features.append(time)
 	features.append(np.nanmean(a))
 
 	return features
+
+# def getFeatures(dict, time):
+# 	features = []
+# 	dataLength = len(dict['ax'])
+
+# 	devA = abs(dict['Azimuth'][-1] - dict['Azimuth'][0]) / time
+# 	devP = abs(dict['Pitch'][-1] - dict['Pitch'][0]) / time
+# 	devR = abs(dict['Roll'][-1] - dict['Roll'][0]) / time
+
+# 	least = min(devR, devP, devA)
+# 	most = max(devR, devP, devA)
+
+# 	if least == devP: 
+# 		a = np.array(dict["ay"])
+# 		x1 = np.array(dict["xx"])
+# 		x2 = np.array(dict["xz"])
+
+# 	elif least == devR: 
+# 		a = np.array(dict["ax"])
+# 		x1 = np.array(dict["xz"])
+# 		x2 = np.array(dict["xy"])
+
+# 	else:
+# 		a = np.array(dict["az"])
+# 		x1 = np.array(dict["xx"])
+# 		x2 = np.array(dict["xy"])
+
+# 	if most == devP:
+# 		y = np.array(dict["xy"])
+# 	elif most == devR:
+# 		y = np.array(dict["xx"])
+# 	else:
+# 		y = np.array(dict["xz"])
+
+
+# 	newthing1 = np.array([x - x1.mean() for x in x1])
+# 	newthing2 = np.array([x - x2.mean() for x in x2])
+
+
+
+# 	yf1 = np.abs(rfft(newthing1))
+# 	yf2 = np.abs(rfft(newthing2))
+
+# 	xf1 = rfftfreq(len(x1), 1 / len(x1))
+# 	xf2 = rfftfreq(len(x2), 1 / len(x2))
+
+# 	# plt.plot(xf1[:20] + xf2[:20], yf1[:20])
+# 	# plt.savefig("graphs/fourier")
+
+# 	peak1 = yf1.max()
+# 	peak2 = yf2.max()
+
+# 	freq1 = 0
+# 	freq2 = 0
+
+# 	for i in range(len(xf1)):
+# 		if yf1[i] == peak1:
+# 			freq1 = xf1[i]
+
+# 	for i in range(len(xf2)):
+# 		if yf2[i] == peak2:
+# 			freq2 = xf2[i]
+
+# 	n5 = np.nanpercentile(y, 5)
+# 	n25 = np.nanpercentile(y, 25)
+# 	n75 = np.nanpercentile(y, 75)
+# 	n95 = np.nanpercentile(y, 95)
+# 	median = np.nanpercentile(y, 50)
+# 	mean = np.nanmean(y)
+# 	std = np.nanstd(y)
+# 	var = np.nanvar(y)
+# 	rms = np.nanmean(np.sqrt(y**2))
+
+# 	features.append(freq1 + freq2)
+# 	features.append(y.max())
+# 	features.append(y.min())
+# 	features.append(n5)
+# 	features.append(n25)
+# 	features.append(n75)
+# 	features.append(n95)
+# 	features.append(median)
+# 	features.append(mean)
+# 	features.append(std)
+# 	features.append(var)
+# 	features.append(rms)
+# 	# features.append(time)
+# 	features.append(np.nanmean(a))
+
+# 	return features
 
 def getConstFeatures(dict):
 	features = []

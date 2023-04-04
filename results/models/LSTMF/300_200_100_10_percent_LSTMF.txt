@@ -1,3 +1,1 @@
-Percentage of pumping: 31.3%
-Percentage of pushing: 68.7%
-Percentage of coasting: 0.0%
+('Percentage of pumping: 100.0%',)

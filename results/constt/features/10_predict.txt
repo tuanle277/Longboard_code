@@ -1,3 +1,3 @@
-{'experimentName': '10', 'datasetProportion': 1.0, 'valProportion': 0.1, 'numEpochs': 50, 'denseLayers': [10], 'resultsName': '10_results', 'predictName': '10_predict', 'percentName': '10_percent', 'optimizer': 'adam', 'paramCount': 173}
+{'experimentName': '10', 'datasetProportion': 1.0, 'valProportion': 0.1, 'numEpochs': 100, 'denseLayers': [10], 'resultsName': '10_results', 'predictName': '10_predict', 'percentName': '10_percent', 'optimizer': 'adam', 'paramCount': 342838}
 
-[]
+['pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'carving', 'pumping', 'pumping', 'pumping', 'pumping', 'pumping', 'carving', 'pumping', 'pumping', 'pumping']

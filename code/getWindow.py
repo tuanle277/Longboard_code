@@ -1,5 +1,10 @@
 from dataTrans import *
 from getFeatures import *
+from scipy.signal import find_peaks
+import scipy.stats
+import scipy.io as sio
+import matplotlib.pyplot as plt
+
 
 # new idea
 # Get chunks of 2-second of data
@@ -16,9 +21,9 @@ from getFeatures import *
 
 # get a period, which means when it changes direction twice
 def getTimes(y, timeData):
-	peaks = find_peaks(y)
+	peaks = find_peaks(y)[0]
 	times = []
-	for i in range(0, len(peaks), 1):
+	for i in range(len(peaks)):
 		times.append(timeData[peaks[i]])
 
 	times.append(timeData[len(timeData) - 1])
@@ -45,7 +50,7 @@ def getFeaWindow(dataset):
 	features = []
 	j = 0
 	dict = {"xx": [], "xy": [], "xz": [], "az": [], "ax": [], "ay": [], "Azimuth": [], "Pitch": [], "Roll": []}
-	times = getTimes(dataset['x(t)(z)'], dataset['time'])
+	times = getTimes(dataset['x(t)(z)'], list(dataset['time']))
 	time = []
 
 	for i in range(len(dataset)):
@@ -77,7 +82,6 @@ def getFeaWindow(dataset):
 		if j < len(times) and i < len(dataset) and dataset.iloc[i].time == times[j]: # -> it should be the sum so far
 			# freqx, freqy, freqz = fft(np.array(freqx)), fft(np.array(freqy)), fft(np.array(freqz))
 			plt.plot(np.array(time), dict['xz'])
-
 			feature = getFeatures(dict, times[j])
 			features.append(feature)
 			# windowx, windowy, windowz = [], [], []
@@ -101,7 +105,7 @@ def getFeaWindow(dataset):
 		# 	# j += 1
 		# 	time = []
 
-	plt.savefig('graphs/period')
+	plt.savefig('../graphs/period')
 	print("shape of the features array is", np.array(features).shape)
 
 	return np.array(features) 
@@ -138,17 +142,17 @@ def getFeaWindowConstSec(dataset, numSec):
 
 		if i == len(dataset) - 1 or (i < len(dataset) and dataset.iloc[i].time - j * numSec >= numSec): # -> it should be the sum so far
 			print(dataset.iloc[i].time, j * numSec)
-			xang, yang, zang = normalize_vector(dict['xx'], dict['xy'], dict['xz'])
+			newRoll, newAzimuth = normalize_vector(dict['xx'], dict['xy'], dict['xz'])
 			# xangss += xangs 
 			# yangss += yangs 
 			# zangss += zangs
 			for i in range(len(dict['xx'])):
 				matrix = (dict['xx'][i], dict['xy'][i], dict['xz'][i])
-				last = rotation(matrix, zang, 0, xang)
+				last = rotation(matrix, newAzimuth, 0, newRoll)
 				dict['xx'][i] = last[0]
 				dict['xy'][i] = last[1]
 				dict['xz'][i] = last[2]
-
+ 
 			feature = getConstFeatures(dict)
 			features.append(feature)
 			dict = {"xx": [], "xy": [], "xz": [], "az": [], "ax": [], "ay": [], "Azimuth": [], "Pitch": [], "Roll": []}
